@@ -3,10 +3,7 @@ import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import "dotenv/config"
 
-const ABI = parseAbi([
-  "function get_value() view returns (uint256)",
-  "function set_value(uint256) public",
-])
+const ABI = parseAbi(["function hola_mundo() public view returns (string)"])
 
 const account = privateKeyToAccount((process as any).env.PRIVATE_KEY)
 
@@ -22,24 +19,13 @@ const publicClient = createPublicClient({
 })
 
 // https://sepolia.arbiscan.io/address/const CONTRACT_ADDRESS = "0x46be8751225be83d7a9b97fec0214c53795d8477"
-const CONTRACT_ADDRESS = "0x46be8751225be83d7a9b97fec0214c53795d8477"
-
-async function write() {
-  const result = await client.writeContract({
-    abi: ABI,
-    address: CONTRACT_ADDRESS,
-    functionName: "set_value",
-    args: [BigInt(12)],
-  })
-
-  console.debug(`Contract: ${result}`)
-}
+const CONTRACT_ADDRESS = "0xede8a5b5e5ded028bde70ef10aab6e904268d351"
 
 async function read() {
   const result = await publicClient.readContract({
     abi: ABI,
     address: CONTRACT_ADDRESS,
-    functionName: "get_value",
+    functionName: "hola_mundo",
   })
 
   console.debug(`Contract: ${result}`)
