@@ -10,7 +10,21 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "viem": "^2.21.53"
+    "@pinata/sdk": "^2.1.0",
+    "@rainbow-me/rainbowkit": "^2.2.1",
+    "@react-three/drei": "^9.120.3",
+    "@react-three/fiber": "^8.17.10",
+    "@wagmi/core": "^2.15.2",
+    "autoprefixer": "^10.4.20",
+    "ethers": "^6.13.4",
+    "ipfs-http-client": "^60.0.1",
+    "pino-pretty": "^13.0.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "tailwindcss-animated": "^1.1.2",
+    "three": "^0.171.0",
+    "viem": "^2.21.53",
+    "wagmi": "^2.13.4"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",

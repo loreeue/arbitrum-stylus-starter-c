@@ -2,82 +2,97 @@
 #include "../stylus-sdk-c/include/stylus_utils.h"
 #include "../stylus-sdk-c/include/string.h"
 
-#define STORAGE_SLOT__value 0x0
+const uint8_t STORAGE_SLOT_BOOK[32] = {
+    0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+};
 
-/**
- * General utils/helpers
- */
+const uint8_t STORAGE_SLOT_METADATA[32] = {
+    0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02
+};
 
-// buffer used to write output, avoiding malloc
 uint8_t buf_out[32];
 
-// succeed and return a bebi32
-ArbResult inline _return_success_bebi32(bebi32 const retval)
-{
-  ArbResult res = {Success, retval, 32};
-  return res;
+ArbResult inline _return_success_bebi32(uint8_t *retval, size_t len) {
+    ArbResult res = {Success, retval, len};
+    return res;
 }
 
-ArbResult set_value(uint8_t *input, size_t len)
-{
+ArbResult store_book(uint8_t *input, size_t len) {
+    if (len != 32) {
+        return _return_short_string(Failure, "InvalidLength");
+    }
+    uint8_t *slot_address = (uint8_t *)(STORAGE_SLOT_BOOK + 0);
+    storage_cache_bytes32(slot_address, input);
+    storage_flush_cache(false);
 
-  if (len != 32)
-  {
-    // revert if input length is not 32 bytes
-    return _return_short_string(Failure, "InvalidLength");
-  }
+    // Verificar que el almacenamiento se realizó correctamente
+    uint8_t verify_buf[32];
+    storage_load_bytes32(slot_address, verify_buf);
 
-  uint8_t *slot_address = (uint8_t *)(STORAGE_SLOT__value + 0); // Get the slot address
-
-  // Allocate a temporary buffer to store the input
-  storage_cache_bytes32(slot_address, input);
-
-  // Flush the cache to store the value permanently
-  storage_flush_cache(false);
-  return _return_success_bebi32(input);
+    return _return_success_bebi32(input, 32);
 }
 
-ArbResult get_value(uint8_t *input, size_t len)
-{
+ArbResult store_metadata(uint8_t *input, size_t len) {
+    if (len != 32) {
+        return _return_short_string(Failure, "InvalidLength");
+    }
+    uint8_t *slot_address = (uint8_t *)(STORAGE_SLOT_METADATA + 0);
+    storage_cache_bytes32(slot_address, input);
+    storage_flush_cache(false);
 
-  uint8_t *slot_address = (uint8_t *)(STORAGE_SLOT__value + 0); // Get the slot address
+    // Verificar que el almacenamiento se realizó correctamente
+    uint8_t verify_buf[32];
+    storage_load_bytes32(slot_address, verify_buf);
 
-  storage_load_bytes32(slot_address, buf_out);
-  if (bebi32_is_zero(buf_out))
-  {
-    return _return_short_string(Failure, "NotSet");
-  }
-
-  return _return_success_bebi32(buf_out);
+    return _return_success_bebi32(input, 32);
 }
 
-ArbResult hello_world(uint8_t *input, size_t len)
-{
-  return _return_short_string(Success, "Hola 42");
+/*ArbResult get_book() {
+    uint8_t *slot_address = (uint8_t *)(STORAGE_SLOT_BOOK + 0);
+    storage_load_bytes32(slot_address, buf_out);
+    if (bebi32_is_zero(buf_out)) {
+        return _return_short_string(Failure, "BookNotFound");
+    }
+    return _return_success_bebi32(buf_out, 32);
 }
 
-int handler(size_t argc)
-{
-  // Save the function calldata
-  uint8_t argv[argc];
-  read_args(argv); // 4 bytes for selector + function arguments
+ArbResult get_metadata() {
+    uint8_t *slot_address = (uint8_t *)(STORAGE_SLOT_METADATA + 0);
+    storage_load_bytes32(slot_address, buf_out);
+    if (bebi32_is_zero(buf_out)) {
+        return _return_short_string(Failure, "MetadataNotFound");
+    }
+    return _return_success_bebi32(buf_out, 32);
+}*/
 
-  // Define the registry array with registered functions
-  FunctionRegistry registry[] = {
-      {to_function_selector("set_value(uint256)"), set_value},
-      {to_function_selector("get_value()"), get_value},
-      {to_function_selector("hola_mundo()"), hello_world},
-      // Add more functions as needed here
-  };
+int handler(size_t argc) {
+    uint8_t argv[argc];
+    read_args(argv);
 
-  uint32_t signature = *((uint32_t *)argv); // Parse function selector
+    FunctionRegistry registry[] = {
+        {to_function_selector("store_book(bytes32)"), store_book},
+        {to_function_selector("store_metadata(bytes32)"), store_metadata},
+        /*{to_function_selector("get_book()"), get_book},
+        {to_function_selector("get_metadata()"), get_metadata},*/
+    };
 
-  // Call the function based on the signature
-  ArbResult res = call_function(registry,
-                                sizeof(registry) / sizeof(registry[0]),
-                                signature, argv + 4, argc - 4 // Exclude the selector from calldata
-  );
-  return (write_result(res.output, res.output_len), res.status);
+    uint32_t signature = *((uint32_t *)argv);
+
+    ArbResult res = call_function(
+        registry,
+        sizeof(registry) / sizeof(registry[0]),
+        signature,
+        argv + 4,
+        argc - 4
+    );
+
+    return (write_result(res.output, res.output_len), res.status);
 }
 
 ENTRYPOINT(handler)
